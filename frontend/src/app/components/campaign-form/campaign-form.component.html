@@ -1,0 +1,45 @@
+<div class="form-section">
+  <h2 class="section-title">Campaign Brief</h2>
+
+  <div class="form-group">
+    <label for="topic">Product / Topic</label>
+    <input
+      id="topic"
+      [(ngModel)]="request.topic"
+      [disabled]="running"
+      placeholder="e.g. Sustainable Coffee Pods"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="audience">Target Audience</label>
+    <textarea
+      id="audience"
+      [(ngModel)]="request.target_audience"
+      [disabled]="running"
+      rows="2"
+      placeholder="e.g. Eco-conscious millennials"
+    ></textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="tone">Tone</label>
+    <select id="tone" [(ngModel)]="request.tone" [disabled]="running">
+      <option *ngFor="let t of tones" [value]="t">{{ t }}</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="goal">Campaign Goal</label>
+    <select id="goal" [(ngModel)]="request.campaign_goal" [disabled]="running">
+      <option *ngFor="let g of goals" [value]="g">{{ g }}</option>
+    </select>
+  </div>
+
+  <button class="run-btn" (click)="submit()" [disabled]="running || !request.topic || !request.target_audience">
+    <span *ngIf="!running">▶ Run Agent Pipeline</span>
+    <span *ngIf="running" class="btn-running">
+      <span class="btn-spinner"></span> Agents Working...
+    </span>
+  </button>
+</div>

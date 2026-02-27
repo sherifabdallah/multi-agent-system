@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Multi-Agent Marketing System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --surface2: #252840;
+      --border: #2e3154;
+      --accent: #6c63ff;
+      --accent2: #ff6584;
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --text: #e2e8f0;
+      --muted: #8892b0;
+    }
+
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface);
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header .badge {
+      background: var(--accent);
+      color: white;
+      font-size: 0.7rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    header .subtitle { color: var(--muted); font-size: 0.85rem; margin-left: auto; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 0;
+      height: calc(100vh - 65px);
+    }
+
+    /* ── Left Panel ── */
+    .left-panel {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .form-section {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-section h2 { font-size: 0.9rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--muted); margin-bottom: 0.4rem; }
+    input, select, textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.75rem;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 70px; }
+
+    .run-btn {
+      width: 100%;
+      padding: 0.75rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .run-btn:hover:not(:disabled) { opacity: 0.9; }
+    .run-btn:active:not(:disabled) { transform: scale(0.98); }
+    .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Agent Feed ── */
+    .agent-feed { padding: 1.5rem; flex: 1; }
+    .agent-feed h2 { font-size: 0.9rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+
+    .feed-empty { color: var(--muted); font-size: 0.85rem; text-align: center; padding: 2rem 0; }
+
+    .agent-event {
+      display: flex;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .agent-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+    .event-body { flex: 1; min-width: 0; }
+    .event-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+    .agent-name { font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .status-dot.thinking { background: var(--yellow); animation: pulse 1s infinite; }
+    .status-dot.done { background: var(--green); }
+    .status-dot.error { background: var(--accent2); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .event-message { font-size: 0.82rem; color: var(--text); line-height: 1.4; }
+
+    /* ── Right Panel ── */
+    .right-panel {
+      overflow-y: auto;
+      padding: 1.5rem;
+      background: var(--bg);
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      gap: 1rem;
+      text-align: center;
+    }
+    .empty-state .icon { font-size: 3rem; }
+    .empty-state h3 { font-size: 1.1rem; color: var(--text); }
+    .empty-state p { font-size: 0.85rem; max-width: 300px; }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .results-grid .full-width { grid-column: 1 / -1; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-header .icon { font-size: 1.1rem; }
+    .card-header h3 { font-size: 0.9rem; font-weight: 600; }
+    .card-header .score-badge {
+      margin-left: auto;
+      background: var(--surface2);
+      border-radius: 999px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .score-badge.good { color: var(--green); }
+    .score-badge.ok { color: var(--yellow); }
+    .score-badge.bad { color: var(--accent2); }
+
+    .tag {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.75rem;
+      margin: 0.2rem;
+      color: var(--text);
+    }
+    .tag.accent { border-color: var(--accent); color: var(--accent); }
+    .tag.green { border-color: var(--green); color: var(--green); }
+    .tag.red { border-color: var(--accent2); color: var(--accent2); }
+
+    .tagline-display {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-align: center;
+      padding: 1rem;
+      background: var(--surface2);
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      font-style: italic;
+    }
+
+    .email-block {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .email-block .subject { font-weight: 600; margin-bottom: 0.5rem; color: var(--accent); font-size: 0.9rem; }
+    .email-block .body { font-size: 0.82rem; color: var(--text); line-height: 1.6; white-space: pre-wrap; }
+
+    .social-post {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      border-left: 3px solid var(--accent);
+    }
+    .social-post .platform { font-size: 0.7rem; color: var(--muted); font-weight: 600; margin-bottom: 0.25rem; text-transform: uppercase; }
+
+    .cta-display {
+      background: var(--accent);
+      color: white;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      display: inline-block;
+      margin-top: 0.5rem;
+    }
+
+    .info-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.82rem; }
+    .info-row .label { color: var(--muted); }
+    .info-row .value { font-weight: 500; }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 999px;
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+      transition: width 0.5s ease;
+    }
+    .progress-fill.medium { background: var(--yellow); }
+    .progress-fill.low { background: var(--accent2); }
+
+    .list-item { display: flex; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.82rem; align-items: flex-start; }
+    .list-item::before { content: '•'; color: var(--accent); flex-shrink: 0; }
+
+    .revision-badge {
+      background: #2d1f00;
+      border: 1px solid var(--yellow);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 1rem;
+      font-size: 0.82rem;
+      color: var(--yellow);
+      grid-column: 1 / -1;
+    }
+    .revision-badge strong { display: block; margin-bottom: 0.25rem; }
+
+    .pipeline-status {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+    }
+    .pipeline-status .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .pipeline-status .done-icon { color: var(--green); font-size: 1rem; }
+
+    select option { background: var(--surface2); }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    const AGENT_ICONS = {
+      'Research Agent': '🔍',
+      'Sentiment Agent': '🧠',
+      'Content Agent': '✍️',
+      'Critic Agent': '🎯',
+      'Orchestrator': '⚡',
+    };
+
+    const TONES = ['Inspiring', 'Professional', 'Playful', 'Urgent', 'Empathetic'];
+    const GOALS = ['Brand Awareness', 'Lead Generation', 'Product Launch', 'Customer Retention', 'Event Promotion'];
+
+    // ── State ──────────────────────────────────────────────────────────────
+    let state = {
+      topic: 'Sustainable Coffee Pods',
+      target_audience: 'Eco-conscious millennials',
+      tone: 'Inspiring',
+      campaign_goal: 'Brand Awareness',
+      events: [],
+      running: false,
+      result: null,
+      error: null,
+    };
+
+    // ── Render ─────────────────────────────────────────────────────────────
+    function render() {
+      document.getElementById('app').innerHTML = `
+        <header>
+          <span style="font-size:1.5rem">🤖</span>
+          <h1>Multi-Agent Marketing System</h1>
+          <span class="subtitle">4 Specialized AI Agents · Real-time Collaboration</span>
+        </header>
+        <div class="layout">
+          ${renderLeftPanel()}
+          ${renderRightPanel()}
+        </div>
+      `;
+      attachListeners();
+    }
+
+    function renderLeftPanel() {
+      return `
+        <div class="left-panel">
+          <div class="form-section">
+            <h2>Campaign Brief</h2>
+            <div class="form-group">
+              <label>Product / Topic</label>
+              <input id="inp-topic" type="text" value="${esc(state.topic)}" placeholder="e.g. Sustainable Coffee Pods" />
+            </div>
+            <div class="form-group">
+              <label>Target Audience</label>
+              <textarea id="inp-audience" rows="2" placeholder="e.g. Eco-conscious millennials">${esc(state.target_audience)}</textarea>
+            </div>
+            <div class="form-group">
+              <label>Tone</label>
+              <select id="inp-tone">
+                ${TONES.map(t => `<option ${t === state.tone ? 'selected' : ''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Campaign Goal</label>
+              <select id="inp-goal">
+                ${GOALS.map(g => `<option ${g === state.campaign_goal ? 'selected' : ''}>${g}</option>`).join('')}
+              </select>
+            </div>
+            <button class="run-btn" id="run-btn" ${state.running ? 'disabled' : ''}>
+              ${state.running ? '<div class="spinner" style="width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite"></div> Agents Working...' : '▶ Run Agent Pipeline'}
+            </button>
+          </div>
+          <div class="agent-feed">
+            <h2>Agent Activity</h2>
+            ${state.events.length === 0 ? '<div class="feed-empty">Agent events will appear here...</div>' : ''}
+            ${state.events.map(renderEvent).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderEvent(ev) {
+      return `
+        <div class="agent-event">
+          <div class="agent-icon">${AGENT_ICONS[ev.agent] || '🤖'}</div>
+          <div class="event-body">
+            <div class="event-header">
+              <span class="agent-name">${ev.agent}</span>
+              <div class="status-dot ${ev.status}"></div>
+            </div>
+            <div class="event-message">${esc(ev.message)}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRightPanel() {
+      if (!state.result && !state.running) {
+        return `
+          <div class="right-panel">
+            <div class="empty-state">
+              <div class="icon">🚀</div>
+              <h3>Ready to Generate</h3>
+              <p>Fill in your campaign brief and click "Run Agent Pipeline" to watch 4 AI agents collaborate in real time.</p>
+            </div>
+          </div>
+        `;
+      }
+
+      if (state.running && !state.result) {
+        const currentAgent = state.events.length > 0 ? state.events[state.events.length - 1] : null;
+        return `
+          <div class="right-panel">
+            <div class="pipeline-status">
+              <div class="spinner"></div>
+              <span>${currentAgent ? `${currentAgent.agent} is working...` : 'Starting pipeline...'}</span>
+            </div>
+            ${renderAgentProgress()}
+          </div>
+        `;
+      }
+
+      const r = state.result;
+      return `
+        <div class="right-panel">
+          <div class="pipeline-status">
+            <span class="done-icon">✅</span>
+            <span>Pipeline complete — ${r.total_iterations} iteration(s) · Final score: <strong>${r.review.overall_score}/10</strong></span>
+          </div>
+          <div class="results-grid">
+            ${r.total_iterations > 1 ? `
+              <div class="revision-badge full-width">
+                <strong>⚠️ Revision Cycle Triggered</strong>
+                The Critic Agent scored the initial content below 7.0 and requested improvements. The Content Agent revised and the final version was re-evaluated.
+              </div>` : ''}
+            ${renderContentCard(r.content)}
+            ${renderCriticCard(r.review)}
+            ${renderResearchCard(r.research)}
+            ${renderSentimentCard(r.sentiment)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAgentProgress() {
+      const agents = ['Research Agent', 'Sentiment Agent', 'Content Agent', 'Critic Agent'];
+      const doneAgents = new Set(state.events.filter(e => e.status === 'done').map(e => e.agent));
+      const thinkingAgent = state.events.filter(e => e.status === 'thinking').map(e => e.agent).pop();
+
+      return `<div class="card">
+        <div class="card-header"><span class="icon">⚡</span><h3>Pipeline Progress</h3></div>
+        ${agents.map(a => `
+          <div class="info-row">
+            <span>${AGENT_ICONS[a]} ${a}</span>
+            <span>${doneAgents.has(a) ? '✅' : a === thinkingAgent ? '⏳' : '⏸'}</span>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    function renderContentCard(c) {
+      const platforms = ['Instagram', 'Twitter/X', 'LinkedIn'];
+      return `
+        <div class="card full-width">
+          <div class="card-header"><span class="icon">✍️</span><h3>Campaign Content</h3></div>
+          <div class="tagline-display">"${esc(c.tagline)}"</div>
+          <div class="email-block">
+            <div class="subject">📧 ${esc(c.email_subject)}</div>
+            <div class="body">${esc(c.email_body)}</div>
+          </div>
+          <div style="margin-bottom:0.5rem; font-size:0.8rem; color:var(--muted); font-weight:600; text-transform:uppercase;">Social Posts</div>
+          ${(c.social_posts || []).map((post, i) => `
+            <div class="social-post">
+              <div class="platform">${platforms[i] || 'Post ' + (i+1)}</div>
+              ${esc(post)}
+            </div>
+          `).join('')}
+          <div style="margin-top:0.75rem">
+            <span class="cta-display">${esc(c.call_to_action)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCriticCard(r) {
+      const scoreClass = r.overall_score >= 8 ? 'good' : r.overall_score >= 6 ? 'ok' : 'bad';
+      const pct = r.overall_score * 10;
+      const barClass = r.overall_score >= 8 ? '' : r.overall_score >= 6 ? 'medium' : 'low';
+      return `
+        <div class="card">
+          <div class="card-header">
+            <span class="icon">🎯</span><h3>Critic Review</h3>
+            <span class="score-badge ${scoreClass}">${r.overall_score}/10</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill ${barClass}" style="width:${pct}%"></div></div>
+          <div style="margin-top:1rem; margin-bottom:0.25rem; font-size:0.75rem; color:var(--muted); font-weight:600;">STRENGTHS</div>
+          ${(r.strengths || []).map(s => `<div class="list-item" style="color:var(--green)">${esc(s)}</div>`).join('')}
+          <div style="margin-top:0.75rem; margin-bottom:0.25rem; font-size:0.75rem; color:var(--muted); font-weight:600;">AREAS TO IMPROVE</div>
+          ${(r.weaknesses || []).map(w => `<div class="list-item" style="color:var(--accent2)">${esc(w)}</div>`).join('')}
+          <div style="margin-top:0.75rem">
+            <span class="tag ${r.approved ? 'green' : 'red'}">${r.approved ? '✅ Approved' : '⚠️ Revised'}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderResearchCard(r) {
+      return `
+        <div class="card">
+          <div class="card-header"><span class="icon">🔍</span><h3>Research Brief</h3></div>
+          <div style="font-size:0.82rem; color:var(--muted); margin-bottom:0.75rem; line-height:1.5">${esc(r.market_context)}</div>
+          <div style="margin-bottom:0.25rem; font-size:0.75rem; color:var(--muted); font-weight:600;">KEY FACTS</div>
+          ${(r.key_facts || []).slice(0, 4).map(f => `<div class="list-item">${esc(f)}</div>`).join('')}
+          <div style="margin-top:0.75rem; margin-bottom:0.25rem; font-size:0.75rem; color:var(--muted); font-weight:600;">COMPETITORS</div>
+          <div>${(r.competitors || []).map(c => `<span class="tag">${esc(c)}</span>`).join('')}</div>
+        </div>
+      `;
+    }
+
+    function renderSentimentCard(s) {
+      const pct = s.trend_score * 10;
+      return `
+        <div class="card">
+          <div class="card-header"><span class="icon">🧠</span><h3>Sentiment Analysis</h3></div>
+          <div class="info-row">
+            <span class="label">Overall Mood</span>
+            <span class="value" style="color:var(--accent)">${esc(s.overall_sentiment)}</span>
+          </div>
+          <div class="info-row"><span class="label">Trend Score</span><span class="value">${s.trend_score}/10</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div style="margin-top:0.75rem; margin-bottom:0.25rem; font-size:0.75rem; color:var(--muted); font-weight:600;">PAIN POINTS</div>
+          ${(s.pain_points || []).map(p => `<div class="list-item" style="color:var(--accent2)">${esc(p)}</div>`).join('')}
+          <div style="margin-top:0.75rem; margin-bottom:0.25rem; font-size:0.75rem; color:var(--muted); font-weight:600;">EMOTIONAL TRIGGERS</div>
+          ${(s.emotional_triggers || []).map(t => `<div class="list-item" style="color:var(--green)">${esc(t)}</div>`).join('')}
+        </div>
+      `;
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    function esc(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    // ── Listeners ────────────────────────────────────────────────────────────
+    function attachListeners() {
+      const setField = (id, key) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', e => { state[key] = e.target.value; });
+      };
+      setField('inp-topic', 'topic');
+      setField('inp-audience', 'target_audience');
+      setField('inp-tone', 'tone');
+      setField('inp-goal', 'campaign_goal');
+
+      const btn = document.getElementById('run-btn');
+      if (btn) btn.addEventListener('click', runPipeline);
+    }
+
+    async function runPipeline() {
+      state.events = [];
+      state.running = true;
+      state.result = null;
+      state.error = null;
+      render();
+
+      const request = {
+        topic: state.topic,
+        target_audience: state.target_audience,
+        tone: state.tone,
+        campaign_goal: state.campaign_goal,
+      };
+
+      try {
+        const response = await fetch('http://localhost:8000/api/campaign/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request),
+        });
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6).trim();
+              if (data === '[DONE]') { state.running = false; render(); return; }
+              if (data) {
+                try {
+                  const event = JSON.parse(data);
+                  state.events.push(event);
+
+                  // Extract final result from orchestrator done event
+                  if (event.agent === 'Orchestrator' && event.status === 'done' && event.data) {
+                    state.result = event.data;
+                    state.running = false;
+                  }
+                  render();
+
+                  // Auto-scroll feed
+                  const feed = document.querySelector('.agent-feed');
+                  if (feed) feed.scrollTop = feed.scrollHeight;
+                } catch(e) {}
+              }
+            }
+          }
+        }
+      } catch(err) {
+        state.error = err.message;
+        state.running = false;
+        render();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!-- Empty State -->
+<div *ngIf="!result && !running" class="empty-state">
+  <div class="empty-icon-svg">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+      stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  </div>
+  <h3>Ready to Generate</h3>
+  <p>Fill in your campaign brief and click "Run Agent Pipeline" to watch 4 AI agents collaborate in real time.</p>
+  <div class="agent-legend">
+    <div class="legend-item">
+      <span class="legend-icon" [innerHTML]="getIcon('Research Agent')"></span>
+      Research Agent
+    </div>
+    <div class="legend-item">
+      <span class="legend-icon" [innerHTML]="getIcon('Sentiment Agent')"></span>
+      Sentiment Agent
+    </div>
+    <div class="legend-item">
+      <span class="legend-icon" [innerHTML]="getIcon('Content Agent')"></span>
+      Content Agent
+    </div>
+    <div class="legend-item">
+      <span class="legend-icon" [innerHTML]="getIcon('Critic Agent')"></span>
+      Critic Agent
+    </div>
+  </div>
+</div>
+
+<!-- Running State -->
+<div *ngIf="running && !result">
+  <div class="pipeline-status">
+    <div class="spinner"></div>
+    <span>{{ currentAgentMessage }}</span>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-header-icon" [innerHTML]="getIcon('Orchestrator')"></span>
+      <h3>Pipeline Progress</h3>
+    </div>
+    <div *ngFor="let agent of allAgents" class="info-row">
+      <span class="agent-row-label">
+        <span class="inline-icon" [innerHTML]="getIcon(agent)"></span>
+        {{ agent }}
+      </span>
+      <span class="status-chip" [ngClass]="getAgentStatus(agent)">
+        <span *ngIf="getAgentStatus(agent) === 'status-done'">DONE</span>
+        <span *ngIf="getAgentStatus(agent) === 'status-thinking'">RUNNING</span>
+        <span *ngIf="getAgentStatus(agent) === 'status-idle'">IDLE</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<div *ngIf="result">
+  <div class="pipeline-status done">
+    <span class="done-check">&#10003;</span>
+    <span>
+      Pipeline complete &mdash;
+      <strong>{{ result.total_iterations }}</strong> iteration(s) &middot;
+      Final score: <strong>{{ result.review.overall_score }}/10</strong>
+    </span>
+  </div>
+
+  <!-- Revision notice -->
+  <div *ngIf="result.total_iterations > 1" class="revision-badge">
+    <strong>&#9888; Revision Cycle Triggered</strong>
+    The Critic Agent scored the initial content below 7.0 and requested improvements.
+    The Content Agent revised and the final version was re-evaluated.
+  </div>
+
+  <div class="results-grid">
+
+    <!-- ── Campaign Content ── -->
+    <div class="card full-width">
+      <div class="card-header">
+        <span class="card-header-icon" [innerHTML]="getIcon('Content Agent')"></span>
+        <h3>Campaign Content</h3>
+      </div>
+
+      <div class="tagline-display">"{{ result.content.tagline }}"</div>
+
+      <div class="email-block">
+        <div class="email-subject">
+          <span class="label-tag">SUBJECT</span> {{ result.content.email_subject }}
+        </div>
+        <div class="email-body">{{ result.content.email_body }}</div>
+      </div>
+
+      <div class="subsection-title">Social Posts</div>
+      <div *ngFor="let post of result.content.social_posts; let i = index" class="social-post">
+        <div class="platform">{{ platforms[i] || 'Post ' + (i+1) }}</div>
+        {{ post }}
+      </div>
+
+      <div style="margin-top:0.75rem">
+        <span class="cta-display">{{ result.content.call_to_action }}</span>
+      </div>
+    </div>
+
+    <!-- ── Critic Review ── -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon" [innerHTML]="getIcon('Critic Agent')"></span>
+        <h3>Critic Review</h3>
+        <span class="score-badge" [ngClass]="scoreClass">
+          {{ result.review.overall_score }}/10
+        </span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" [ngClass]="scoreBarClass" [style.width.%]="result.review.overall_score * 10"></div>
+      </div>
+
+      <div class="subsection-title" style="margin-top:1rem">STRENGTHS</div>
+      <div *ngFor="let s of result.review.strengths" class="list-item green-item">{{ s }}</div>
+
+      <div class="subsection-title" style="margin-top:0.75rem">AREAS TO IMPROVE</div>
+      <div *ngFor="let w of result.review.weaknesses" class="list-item red-item">{{ w }}</div>
+
+      <div style="margin-top:0.75rem">
+        <span class="tag" [class.tag-green]="result.review.approved" [class.tag-red]="!result.review.approved">
+          {{ result.review.approved ? 'APPROVED' : 'REVISED' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Research Brief ── -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon" [innerHTML]="getIcon('Research Agent')"></span>
+        <h3>Research Brief</h3>
+      </div>
+      <div class="market-context">{{ result.research.market_context }}</div>
+
+      <div class="subsection-title">KEY FACTS</div>
+      <div *ngFor="let f of result.research.key_facts.slice(0, 4)" class="list-item">{{ f }}</div>
+
+      <div class="subsection-title" style="margin-top:0.75rem">OPPORTUNITIES</div>
+      <div *ngFor="let o of result.research.opportunities.slice(0, 3)" class="list-item accent-item">{{ o }}</div>
+
+      <div class="subsection-title" style="margin-top:0.75rem">COMPETITORS</div>
+      <span *ngFor="let c of result.research.competitors" class="tag">{{ c }}</span>
+    </div>
+
+    <!-- ── Sentiment Analysis ── -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-header-icon" [innerHTML]="getIcon('Sentiment Agent')"></span>
+        <h3>Sentiment Analysis</h3>
+      </div>
+
+      <div class="info-row">
+        <span class="label">Overall Mood</span>
+        <span class="value accent">{{ result.sentiment.overall_sentiment }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Trend Score</span>
+        <span class="value">{{ result.sentiment.trend_score }}/10</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="result.sentiment.trend_score * 10"></div>
+      </div>
+
+      <div class="subsection-title" style="margin-top:0.75rem">PAIN POINTS</div>
+      <div *ngFor="let p of result.sentiment.pain_points" class="list-item red-item">{{ p }}</div>
+
+      <div class="subsection-title" style="margin-top:0.75rem">EMOTIONAL TRIGGERS</div>
+      <div *ngFor="let t of result.sentiment.emotional_triggers" class="list-item green-item">{{ t }}</div>
+
+      <div class="recommended-angle">
+        <strong>Strategic Angle:</strong> {{ result.sentiment.recommended_angle }}
+      </div>
+    </div>
+
+  </div>
+</div>

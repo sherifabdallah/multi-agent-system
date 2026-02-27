@@ -1,0 +1,23 @@
+<div class="agent-feed">
+  <h2 class="section-title">Agent Activity</h2>
+
+  <div *ngIf="events.length === 0" class="feed-empty">
+    Agent events will appear here once you run the pipeline...
+  </div>
+
+  <div *ngFor="let ev of events; trackBy: trackByIndex" class="agent-event" [class.event-done]="ev.status === 'done'"
+    [class.event-error]="ev.status === 'error'">
+    <div class="agent-icon" [innerHTML]="getIcon(ev.agent)"></div>
+    <div class="event-body">
+      <div class="event-header">
+        <span class="agent-name">{{ ev.agent }}</span>
+        <div class="status-dot" [class.thinking]="ev.status === 'thinking'" [class.done]="ev.status === 'done'"
+          [class.error]="ev.status === 'error'"></div>
+        <span class="status-label">{{ ev.status }}</span>
+      </div>
+      <div class="event-message">{{ ev.message }}</div>
+    </div>
+  </div>
+
+  <div #feedEnd></div>
+</div>
